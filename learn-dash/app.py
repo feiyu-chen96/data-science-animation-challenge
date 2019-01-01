@@ -1,41 +1,55 @@
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
+from dash.dependencies import Input, Output
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
+all_options = {
+    'America': ['New York City', 'San Francisco', 'Cincinnati'],
+    'Canada': [u'Montréal', 'Toronto', 'Ottawa']
+}
 app.layout = html.Div([
     dcc.RadioItems(
-        id='dropdown-a',
-        options=[{'label': i, 'value': i} for i in ['Canada', 'USA', 'Mexico']],
-        value='Canada'
+        id='countries-dropdown',
+        options=[{'label': k, 'value': k} for k in all_options.keys()],
+        value='America'
     ),
-    html.Div(id='output-a'),
 
-    dcc.RadioItems(
-        id='dropdown-b',
-        options=[{'label': i, 'value': i} for i in ['MTL', 'NYC', 'SF']],
-        value='MTL'
-    ),
-    html.Div(id='output-b')
+    html.Hr(),
 
+    dcc.RadioItems(id='cities-dropdown'),
+
+    html.Hr(),
+
+    html.Div(id='display-selected-values')
 ])
 
 
 @app.callback(
-    dash.dependencies.Output('output-a', 'children'),
-    [dash.dependencies.Input('dropdown-a', 'value')])
-def callback_a(dropdown_value):
-    return 'You\'ve selected "{}"'.format(dropdown_value)
+    dash.dependencies.Output('cities-dropdown', 'options'),
+    [dash.dependencies.Input('countries-dropdown', 'value')])
+def set_cities_options(selected_country):
+    return [{'label': i, 'value': i} for i in all_options[selected_country]]
 
 
 @app.callback(
-    dash.dependencies.Output('output-b', 'children'),
-    [dash.dependencies.Input('dropdown-b', 'value')])
-def callback_b(dropdown_value):
-    return 'You\'ve selected "{}"'.format(dropdown_value)
+    dash.dependencies.Output('cities-dropdown', 'value'),
+    [dash.dependencies.Input('cities-dropdown', 'options')])
+def set_cities_value(available_options):
+    return available_options[0]['value']
+
+
+@app.callback(
+    dash.dependencies.Output('display-selected-values', 'children'),
+    [dash.dependencies.Input('countries-dropdown', 'value'),
+     dash.dependencies.Input('cities-dropdown', 'value')])
+def set_display_children(selected_country, selected_city):
+    return u'{} is a city in {}'.format(
+        selected_city, selected_country,
+    )
 
 
 if __name__ == '__main__':
