@@ -24,10 +24,10 @@ estimators = adaboost.estimators_
 # get sample weights
 staged_classification = np.array(list(adaboost.staged_predict(X)))
 staged_missclassified = staged_classification != y
-staged_sample_weights = np.zeros(shape=(n_iterations, len(X))) / len(X)
-for istage in range(1, n_iterations):
-    estimator_weight = adaboost.estimator_weights_[istage]
-    sample_weight = staged_sample_weights[istage-1, :]
+staged_sample_weights = np.ones(shape=(n_iterations+1, len(X))) / len(X)
+for istage in range(1, n_iterations+1):
+    estimator_weight = adaboost.estimator_weights_[istage-1]
+    sample_weight = staged_sample_weights[istage-1].copy()
     incorrect = staged_missclassified[istage-1]
     ############ code snippets from sklearn AdaboostClassifier source ############
     # Only boost positive weights
@@ -35,7 +35,8 @@ for istage in range(1, n_iterations):
                                     ((sample_weight > 0) |
                                      (estimator_weight < 0)))
     ##############################################################################
-    staged_sample_weights[istage, :] = estimator_weight
+    sample_weight /= np.sum(sample_weight)
+    staged_sample_weights[istage] = sample_weight
 
 # prepare to plot decision boundary
 h = .02
@@ -95,7 +96,7 @@ def update_sample_weights(selected_iter):
 
     data   = [go.Scatter(x=X[:, 0], y=X[:, 1], mode='markers', 
                          marker=dict(color=y, colorscale='RdBu', line=dict(width=0), opacity=0.7,
-                                     size=staged_sample_weights[selected_iter]*3)),
+                                     size=np.sqrt(staged_sample_weights[selected_iter]*3000))),
               go.Heatmap(x=xs, y=ys, z=staged_zz[selected_iter-1], 
                          colorscale='RdBu', opacity=0.3, showscale=False)]
     layout = go.Layout(title='Sample Weights', 
@@ -118,13 +119,13 @@ def update_next_classifier(selected_iter):
 
         data = [go.Scatter(x=X[:, 0], y=X[:, 1], mode='markers', 
                            marker=dict(color=y, colorscale='RdBu', line=dict(width=0), opacity=0.7,
-                                       size=staged_sample_weights[selected_iter]*3)),
+                                       size=np.sqrt(staged_sample_weights[selected_iter]*3000))),
                 go.Heatmap(x=xs, y=ys, z=next_zz, 
                             colorscale='RdBu', opacity=0.3, showscale=False)]
     except:
         data = [go.Scatter(x=X[:, 0], y=X[:, 1], mode='markers', 
                            marker=dict(color=y, colorscale='RdBu', line=dict(width=0), opacity=0.7,
-                                       size=staged_sample_weights[selected_iter]*3))]
+                                       size=np.sqrt(staged_sample_weights[selected_iter]*3000)))]
     layout = go.Layout(title='Next Classifier', 
                        autosize=False, width=400, height=400)
 
