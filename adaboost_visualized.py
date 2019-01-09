@@ -20,9 +20,6 @@ def initialize(tree_depth=2, sample_size=300, sample_noise=0.2):
                                   base_estimator=DecisionTreeClassifier(max_depth=tree_depth))
     adaboost.fit(X, y)
 
-    # get estimators in the ensemble
-    estimators = adaboost.estimators_
-
     # get sample weights
     staged_classification = np.array(list(adaboost.staged_predict(X)))
     staged_missclassified = staged_classification != y
@@ -41,7 +38,7 @@ def initialize(tree_depth=2, sample_size=300, sample_noise=0.2):
         staged_sample_weights[istage] = sample_weight
 
     # prepare to plot decision boundary
-    h = .02
+    h = .1
     xrange = np.max(X[:, 0]) - np.min(X[:, 0])
     yrange = np.max(X[:, 1]) - np.min(X[:, 1])
     xs = np.arange(np.min(X[:, 0])-xrange*0.1, np.max(X[:, 0])+xrange*0.1, h)
@@ -50,16 +47,23 @@ def initialize(tree_depth=2, sample_size=300, sample_noise=0.2):
     staged_zz = np.array(list(adaboost.staged_predict(np.c_[xx.ravel(), yy.ravel()])))
     staged_zz = staged_zz.reshape(len(staged_zz), xx.shape[0], xx.shape[1])
 
+    # get estimators in the ensemble
+    estimators = adaboost.estimators_
+    single_zz  = np.zeros(shape=(len(estimators), xx.shape[0], xx.shape[1]))
+    for iiter in range(1, n_iterations):
+        next_estimator = estimators[iiter]
+        next_zz = next_estimator.predict(np.c_[xx.ravel(), yy.ravel()])
+        next_zz = next_zz.reshape(xx.shape)
+        single_zz[iiter] = next_zz
+
     globalvars = {}
     globalvars['X'] = X
     globalvars['y'] = y
-    globalvars['estimators'] = estimators
     globalvars['staged_sample_weights'] = staged_sample_weights
     globalvars['xs'] = xs
     globalvars['ys'] = ys
-    globalvars['xx'] = xx
-    globalvars['yy'] = yy
     globalvars['staged_zz'] = staged_zz
+    globalvars['single_zz'] = single_zz
     return globalvars
 
 globalvars = initialize()
@@ -214,23 +218,19 @@ def update_sample_weights_with_iter(selected_iter):
 def update_next_classifier_with_iter(selected_iter):
 
     X,y = globalvars['X'], globalvars['y']
-    xs, ys, xx, yy = globalvars['xs'], globalvars['ys'], globalvars['xx'], globalvars['yy']
+    xs, ys= globalvars['xs'], globalvars['ys']
     staged_sample_weights = globalvars['staged_sample_weights']
-    estimators = globalvars['estimators']
+    single_zz = globalvars['single_zz']
 
-    try:
-        next_estimator = estimators[selected_iter]
-        next_zz = next_estimator.predict(np.c_[xx.ravel(), yy.ravel()])
-        next_zz = next_zz.reshape(xx.shape)
-
+    if not selected_iter == n_iterations:
         data = [go.Scatter(x=X[:, 0], y=X[:, 1], mode='markers', 
                            marker=dict(color=y, colorscale='RdBu', line=dict(width=0), opacity=0.7,
                                        size=np.sqrt(staged_sample_weights[selected_iter]*3000)),
                            hoverinfo='none'),
-                go.Heatmap(x=xs, y=ys, z=next_zz, 
+                go.Heatmap(x=xs, y=ys, z=single_zz[selected_iter], 
                            colorscale='RdBu', opacity=0.3, showscale=False,
                            hoverinfo='none')]
-    except:
+    else:
         data = [go.Scatter(x=X[:, 0], y=X[:, 1], mode='markers', 
                            marker=dict(color=y, colorscale='RdBu', line=dict(width=0), opacity=0.7,
                                        size=np.sqrt(staged_sample_weights[selected_iter]*3000)),
