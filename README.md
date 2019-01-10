@@ -24,4 +24,4 @@ We can use the dropdowns at the top to configure the base classifier of AdaBoost
 
 The visulization starts at the 1st iteration. The plot on the left shows the decision boundary after the 1st iteration. The blue dots and red dots denote two different classes. The blue area is where the samples are classified to be the blue class and the red area is where the samples are classified to be the red class. The plot in the middle shows the weight assigned to each training example after the 1st iteration. Note that the missclassified examples were given larger weight. The plot on the right shows the next classifier to be added to the ensemble. Note that it tries to fit the missclassified examples better.
 
-20 iterations are calculated in total. The number of iterations can be chosen in the slider at the bottom.
+20 iterations are calculated in total. The number of iterations can be chosen in the slider at the bottom. (If the app is viewed by acessing the herokuapp url, the updating process may have a little latency (~1s) and the 3 plots will be out of sync during this process.)
